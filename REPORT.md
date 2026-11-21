@@ -1,7 +1,14 @@
 # Report: Post-OCR Correction for Sanskrit / Devanagari
 
 **Track:** Option 3, Post-OCR Correction Model for Sanskrit/Indic Text
-**Model:** `google/byt5-small`, fully fine-tuned (final = `checkpoint-1600`, on Hugging Face: [`MrunalYewatkar45/byt5-small-sanskrit-post-ocr`](https://huggingface.co/MrunalYewatkar45/byt5-small-sanskrit-post-ocr)) · **Hardware:** Google Colab T4 (16 GB) · **Notebook:** `notebooks/Sanskrit_Post_OCR_Correction.ipynb`
+**Model:** `google/byt5-small`, fully fine-tuned (final = `checkpoint-1600`) · **Hardware:** Google Colab T4 (16 GB)
+
+**Links**
+- Trained model (Hugging Face, public): https://huggingface.co/MrunalYewatkar45/byt5-small-sanskrit-post-ocr
+- Code, data and all results (GitHub): https://github.com/Mrunal31-Stark/OCR_Extraction_indic_text
+- Notebook with outputs: `notebooks/Sanskrit_Post_OCR_Correction.ipynb` · Setup instructions (Colab and local): [`README.md`](README.md#setup)
+
+> **Training status (please note):** I stopped training early, at **step 1,768 of 2,125 (83% of one epoch)**, because the **Google Colab GPU runtime kept disconnecting** during the run. Training was resumed once after a disconnect, from `checkpoint-400`, and the runtime dropped again several times. Rather than lose more time to resets, I used the best checkpoint saved so far, **`checkpoint-1600`** (dev CER 5.2%). The dev curve was still falling (7.8% → 7.0% → 5.7% → 5.2%), so **all results below are for a partly trained model**. Finishing the epoch, about 30 more minutes on a T4, would likely improve them a little. See §4 and §8.
 
 ## Results at a glance
 | Test set | CER before → after | WER before → after | Notes |
@@ -75,7 +82,7 @@ Full fine-tuning (300M parameters fit on a T4, so LoRA isn't needed) with the Hu
 | dev CER | 7.8% | 7.0% | 5.7% | **5.2%** |
 | dev WER | 31.0% | 29.7% | 26.3% | **24.6%** |
 
-The model first learns to copy (step 400 is barely below doing nothing), then to correct. **Early stop:** Colab disconnected repeatedly during training. We stopped at step 1,768 of 2,125 and use **`checkpoint-1600`**, the best by dev CER. The curve was still going down, so the last ~17% of the epoch (at a learning rate already winding down) and further epochs would likely help a bit.
+The model first learns to copy (step 400 is barely below doing nothing), then to correct. **Early stop because of Colab GPU disconnects:** the Google Colab GPU runtime disconnected repeatedly during training, so I stopped at step 1,768 of 2,125 and use **`checkpoint-1600`**, the best by dev CER. The curve was still going down, so the last ~17% of the epoch (at a learning rate already winding down) and further epochs would likely help a bit. Training can be finished from the saved checkpoint with the resume cell (README, Option C).
 
 ## 5. Hardware constraints and optimizations
 | Constraint | Decision |
@@ -202,7 +209,11 @@ Errors by type: consonant 1,495 → 540 (−64%) · conjunct 645 → 270 (−58%
 - **Running out of GPU memory** on the first step. Length grouping deliberately puts the longest batch first, so we fixed it at the worst case with gradient accumulation.
 - **Tesseract was too good on clean fonts:** naive rendering gave about 2% CER, which teaches little. We measured per font and weighted toward the font that produces realistic errors, and we report that as a possible source of optimistic results.
 - **Notebook and runtime instability:** the first background launch (`!nohup … &`) stayed attached to the cell and blocked the notebook. After a browser reconnect, training stalled at step 400. Because checkpoints and data were on Drive, we resumed from `checkpoint-400` with no loss, using a properly detached `subprocess.Popen(start_new_session=True)`.
-- **Repeated Colab disconnects:** the runtime kept dropping during the roughly 80-minute run. The detached process kept going through browser disconnects. In the end we stopped early at step 1,768 and kept the best saved checkpoint (1,600) rather than risk losing time to another reset.
+- **Repeated Colab GPU disconnects, the reason training stopped early:**
+  - The first run stalled after `checkpoint-400` when the session dropped. I resumed from that checkpoint without losing work, because checkpoints and data lived on Google Drive.
+  - The GPU runtime then kept disconnecting during the roughly 80-minute run. The detached training process survived some of these, but each one meant reconnecting and checking state.
+  - I stopped training at step 1,768 of 2,125 and used the best saved checkpoint (1,600) rather than risk losing more time to another reset.
+  - **Lesson:** on free Colab, plan for interruptions. Keep checkpoints frequent and on Drive, make training resumable, run it detached from the notebook, and use a paid or local GPU for runs longer than about an hour.
 - **A bug in our own evaluation:** the first real-word-error check matched substrings and wrongly reported योगः as unfixed inside the correct word संयोगः. We switched to whole-word comparison.
 - **The tokenizer hypothesis was wrong:** we expected mT5 to fragment Sanskrit badly, and measured that it doesn't. We kept ByT5 for other, stated reasons and documented the finding.
 
