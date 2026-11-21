@@ -1,0 +1,188 @@
+{
+ "model": "/content/drive/MyDrive/sanskrit_ocr/byt5/checkpoint-1600",
+ "dev_curve": [
+  {
+   "step": 400,
+   "dev_cer": 0.07815138952863504,
+   "dev_wer": 0.30977917981072556
+  },
+  {
+   "step": 800,
+   "dev_cer": 0.06978350990327038,
+   "dev_wer": 0.29652996845425866
+  },
+  {
+   "step": 1200,
+   "dev_cer": 0.05688622754491018,
+   "dev_wer": 0.26246056782334387
+  },
+  {
+   "step": 1600,
+   "dev_cer": 0.05243359434976201,
+   "dev_wer": 0.24605678233438485
+  }
+ ],
+ "test_rule": {
+  "cer_before": 0.07416011436740529,
+  "cer_after": 0.03413152251608292,
+  "wer_before": 0.360184331797235,
+  "wer_after": 0.1854377880184332,
+  "lines": 1000,
+  "fully_fixed": 0.2985658409387223,
+  "over_correction": 0.13733905579399142,
+  "made_worse": 0.068,
+  "types_before": {
+   "consonant": 1495,
+   "conjunct": 645,
+   "mark": 351,
+   "space/punct": 128
+  },
+  "types_after": {
+   "mark": 313,
+   "consonant": 540,
+   "conjunct": 270,
+   "space/punct": 69
+  },
+  "n_lines": 1000,
+  "cer_before_ci95": [
+   0.0701,
+   0.0782
+  ],
+  "cer_after_ci95": [
+   0.0316,
+   0.0374
+  ],
+  "n_already_correct": 233,
+  "n_over_corrected": 32
+ },
+ "test_render": {
+  "cer_before": 0.0883226012695803,
+  "cer_after": 0.0742567474996575,
+  "wer_before": 0.32608695652173914,
+  "wer_after": 0.2784134248665141,
+  "lines": 500,
+  "fully_fixed": 0.06666666666666667,
+  "over_correction": 0.07096774193548387,
+  "made_worse": 0.136,
+  "types_before": {
+   "consonant": 616,
+   "conjunct": 329,
+   "mark": 312,
+   "space/punct": 84
+  },
+  "types_after": {
+   "conjunct": 261,
+   "mark": 304,
+   "consonant": 435,
+   "space/punct": 63
+  },
+  "n_lines": 500,
+  "cer_before_ci95": [
+   0.0804,
+   0.0968
+  ],
+  "cer_after_ci95": [
+   0.0668,
+   0.0818
+  ],
+  "n_already_correct": 155,
+  "n_over_corrected": 11
+ },
+ "real_pages": {
+  "cer_before": 0.09645390070921986,
+  "cer_after": 0.08226950354609928,
+  "wer_before": 0.3391304347826087,
+  "wer_after": 0.3217391304347826,
+  "lines": 5,
+  "fully_fixed": 0.0,
+  "over_correction": 0.0,
+  "made_worse": 0.4,
+  "types_before": {
+   "consonant": 26,
+   "conjunct": 12,
+   "mark": 13
+  },
+  "types_after": {
+   "consonant": 23,
+   "mark": 15,
+   "conjunct": 8
+  },
+  "n_line_pairs": 20,
+  "cer_before_ci95": [
+   0.0736,
+   0.1252
+  ],
+  "cer_after_ci95": [
+   0.064,
+   0.1088
+  ],
+  "per_page": {
+   "1": {
+    "cer_before": 0.12121212121212122,
+    "cer_after": 0.06565656565656566,
+    "wer_before": 0.34285714285714286,
+    "wer_after": 0.2571428571428571
+   },
+   "2": {
+    "cer_before": 0.05785123966942149,
+    "cer_after": 0.0743801652892562,
+    "wer_before": 0.2,
+    "wer_after": 0.3
+   },
+   "3": {
+    "cer_before": 0.09836065573770492,
+    "cer_after": 0.10655737704918032,
+    "wer_before": 0.3684210526315789,
+    "wer_after": 0.3684210526315789
+   },
+   "4": {
+    "cer_before": 0.09701492537313433,
+    "cer_after": 0.08955223880597014,
+    "wer_before": 0.4,
+    "wer_after": 0.35
+   },
+   "5": {
+    "cer_before": 0.09230769230769231,
+    "cer_after": 0.08461538461538462,
+    "wer_before": 0.38095238095238093,
+    "wer_after": 0.38095238095238093
+   }
+  }
+ },
+ "test_render_by_font": {
+  "Kalam-Regular.ttf": {
+   "n": 241,
+   "cer_before": 0.1518548901649804,
+   "cer_after": 0.12177559019232521
+  },
+  "NotoSansDevanagari-Regular.ttf": {
+   "n": 52,
+   "cer_before": 0.018606870229007633,
+   "cer_after": 0.019083969465648856
+  },
+  "TiroDevanagariSanskrit-Regular.ttf": {
+   "n": 55,
+   "cer_before": 0.03591160220994475,
+   "cer_after": 0.03959484346224678
+  },
+  "YatraOne-Regular.ttf": {
+   "n": 45,
+   "cer_before": 0.029326923076923077,
+   "cer_after": 0.03076923076923077
+  },
+  "NotoSerifDevanagari-Regular.ttf": {
+   "n": 58,
+   "cer_before": 0.01875,
+   "cer_after": 0.02125
+  },
+  "Lohit-Devanagari.ttf": {
+   "n": 49,
+   "cer_before": 0.02066115702479339,
+   "cer_after": 0.022497704315886134
+  }
+ },
+ "beam4": {
+  "real_cer": 0.07659574468085106,
+  "render_cer": 0.07380006393569895
+ }
+}

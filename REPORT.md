@@ -7,8 +7,10 @@
 | Test set | CER before → after | WER before → after | Notes |
 |---|---|---|---|
 | **Real page images** (5 pages, 705 chars) | **9.6% → 8.2%** (beam 4: **7.7%**) | 33.9% → 32.2% | 95% CI: [7.4–12.5] → [6.4–10.9], overlapping |
-| **Our noisy images** (500 rendered lines + real Tesseract) | **8.8% → 7.4%** | 32.6% → 27.8% | handwriting-style font (Kalam): 15.2% → 12.2% |
-| Synthetic rule noise (1,000 lines) | **7.4% → 3.4%** | 36.0% → 18.5% | 30% of broken lines fully restored |
+| **Our noisy images** (500 rendered lines + real Tesseract) | **8.8% → 7.4%** | 32.6% → 27.8% | 95% CI: [8.0–9.7] → [6.7–8.2]; Kalam font: 15.2% → 12.2% |
+| Synthetic rule noise (1,000 lines) | **7.4% → 3.4%** | 36.0% → 18.5% | 95% CI: [7.0–7.8] → [3.2–3.7]; 30% of broken lines fully restored |
+
+All numbers, per-line predictions and data splits are in the repo: `results/metrics.json`, `results/predictions_*.jsonl`, `datasets/`.
 
 **In one line:** the corrector more than halves the errors on noise like its training data. On real Tesseract output the gain is **15–20%**, and on just 5 pages that isn't statistically conclusive. It also changes **11% of lines that were already correct** (over-correction). The gap between synthetic and real errors, together with over-correction, is the main finding and the main thing to fix next (see §7, §9).
 
