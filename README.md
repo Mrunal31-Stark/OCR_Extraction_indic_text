@@ -55,4 +55,16 @@ Model: `checkpoint-1600` (best dev CER, 5.2%). Numbers come from [`results/metri
 Statistically clear gains on both generated test sets (non-overlapping CIs). On the 5 real pages the gain is modest and the CIs overlap. 11% of already-correct lines get changed (over-correction). See the report for the failure analysis.
 
 ## Model checkpoint
-Trained weights (~1.2 GB) are on Google Drive at `MyDrive/sanskrit_ocr/byt5/checkpoint-1600`. They aren't committed here: GitHub's file limit is 100 MB.
+**Hugging Face:** [`MrunalYewatkar45/byt5-small-sanskrit-post-ocr`](https://huggingface.co/MrunalYewatkar45/byt5-small-sanskrit-post-ocr) (public, `checkpoint-1600`, 1.2 GB, with model card).
+
+```python
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+repo = "MrunalYewatkar45/byt5-small-sanskrit-post-ocr"
+tok, model = AutoTokenizer.from_pretrained(repo), AutoModelForSeq2SeqLM.from_pretrained(repo)
+x = tok(["आयुः तस्त्र हितं च अदितं च मानम् च"], return_tensors="pt")
+print(tok.batch_decode(model.generate(**x, max_length=384), skip_special_tokens=True))
+# -> ['आयुः तस्य हितं च अदितं च मानम् च']
+```
+Or with the repo's CLI: `python src/infer.py --model MrunalYewatkar45/byt5-small-sanskrit-post-ocr --text "…"`.
+
+The weights aren't committed to GitHub because its file limit is 100 MB.

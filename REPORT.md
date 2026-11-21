@@ -1,7 +1,7 @@
 # Report: Post-OCR Correction for Sanskrit / Devanagari
 
 **Track:** Option 3, Post-OCR Correction Model for Sanskrit/Indic Text
-**Model:** `google/byt5-small`, fully fine-tuned (final = `checkpoint-1600`) · **Hardware:** Google Colab T4 (16 GB) · **Notebook:** `notebooks/Sanskrit_Post_OCR_Correction.ipynb`
+**Model:** `google/byt5-small`, fully fine-tuned (final = `checkpoint-1600`, on Hugging Face: [`MrunalYewatkar45/byt5-small-sanskrit-post-ocr`](https://huggingface.co/MrunalYewatkar45/byt5-small-sanskrit-post-ocr)) · **Hardware:** Google Colab T4 (16 GB) · **Notebook:** `notebooks/Sanskrit_Post_OCR_Correction.ipynb`
 
 ## Results at a glance
 | Test set | CER before → after | WER before → after | Notes |
