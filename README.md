@@ -34,7 +34,7 @@ Statistically clear gains on both generated test sets (non-overlapping CIs). On 
 ## Repository layout
 | Path | What it is |
 |---|---|
-| `notebooks/Sanskrit_Post_OCR_Correction.ipynb` | End-to-end Colab notebook (Phases 0–4), every code cell with its output |
+| `notebooks/Sanskrit_Post_OCR_Correction.ipynb` | End-to-end Colab notebook (Phases 0–5: baseline → data → training → evaluation → Hugging Face publish + reproduction check), every code cell with its output (except the interactive login cell) |
 | `src/noise.py` | Synthetic OCR-noise generator, calibrated on real Tesseract errors |
 | `src/train.py` | ByT5 fine-tuning (HF `Seq2SeqTrainer`, resumable from the latest checkpoint) |
 | `src/infer.py` | Inference CLI / `Corrector` class (batched, splits long lines) |
