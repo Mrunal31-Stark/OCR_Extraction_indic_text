@@ -17,7 +17,8 @@ ByT5 corrector       →  "तस्य हितं च अहितं च"
 | `src/infer.py` | Inference CLI / `Corrector` class (batched, splits long lines) |
 | `src/evaluate.py` | Metrics: CER/WER, over-correction, error-type breakdown, bootstrap CIs |
 | `Data/` | Held-out **real** test set: 5 page images + ground-truth text (never trained on) |
-| `REPORT.md` | Report covering the 9 required points, with limitations |
+| `samples/` | 6 degraded line images from held-out text + OCR/correction outputs, `phase4_results.json` |
+| `REPORT.md` | Report covering the 9 required points, results, failure analysis, limitations |
 
 ## Setup (Google Colab, T4)
 1. Open the notebook in Colab and choose **Runtime → Change runtime type → T4 GPU**.
@@ -34,13 +35,15 @@ python src/evaluate.py   # self-check
 ```
 
 ## Key results
-Results are filled in after Phase 4. See [`REPORT.md`](REPORT.md#6-evaluation-methodology).
+Model: `checkpoint-1600` (best dev CER, 5.2%). Full analysis in [`REPORT.md`](REPORT.md#6-evaluation-methodology).
 
-| Test set | CER before | CER after | WER before | WER after |
-|---|---|---|---|---|
-| Real pages (5) | 9.6% | – | 33.9% | – |
-| Synthetic (rule noise) | 7.4% | – | – | – |
-| Rendered + OCR | 8.8% | – | – | – |
+| Test set | CER before → after | WER before → after |
+|---|---|---|
+| **Real page images** (5 pages) | 9.6% → **8.2%** (beam 4: **7.7%**) | 33.9% → 32.2% |
+| **Our noisy rendered images** (500 lines, real Tesseract) | 8.8% → **7.4%** | 32.6% → 27.8% |
+| Synthetic rule noise (1,000 lines) | 7.4% → **3.4%** | 36.0% → 18.5% |
+
+Big gains on noise like the training data, modest gains on real OCR (5 pages, overlapping CIs), and an 11% over-correction rate on already-correct lines. See the report for failure analysis. Sample before/after images are in [`samples/`](samples/).
 
 ## Model checkpoint
-Trained weights (~1.2 GB) are on Google Drive at `MyDrive/sanskrit_ocr/byt5/final`. They aren't committed here because of their size.
+Trained weights (~1.2 GB) are on Google Drive at `MyDrive/sanskrit_ocr/byt5/checkpoint-1600`. They aren't committed here because of their size.

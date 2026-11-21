@@ -1,9 +1,16 @@
 # Report: Post-OCR Correction for Sanskrit / Devanagari
 
 **Track:** Option 3, Post-OCR Correction Model for Sanskrit/Indic Text
-**Model:** `google/byt5-small`, fully fine-tuned · **Hardware:** Google Colab T4 (16 GB) · **Notebook:** `notebooks/Sanskrit_Post_OCR_Correction.ipynb`
+**Model:** `google/byt5-small`, fully fine-tuned (final = `checkpoint-1600`) · **Hardware:** Google Colab T4 (16 GB) · **Notebook:** `notebooks/Sanskrit_Post_OCR_Correction.ipynb`
 
-> Sections marked *(Phase 4)* are completed after the evaluation run.
+## Results at a glance
+| Test set | CER before → after | WER before → after | Notes |
+|---|---|---|---|
+| **Real page images** (5 pages, 705 chars) | **9.6% → 8.2%** (beam 4: **7.7%**) | 33.9% → 32.2% | 95% CI: [7.4–12.5] → [6.4–10.9], overlapping |
+| **Our noisy images** (500 rendered lines + real Tesseract) | **8.8% → 7.4%** | 32.6% → 27.8% | handwriting-style font (Kalam): 15.2% → 12.2% |
+| Synthetic rule noise (1,000 lines) | **7.4% → 3.4%** | 36.0% → 18.5% | 30% of broken lines fully restored |
+
+**In one line:** the corrector more than halves the errors on noise like its training data. On real Tesseract output the gain is **15–20%**, and on just 5 pages that isn't statistically conclusive. It also changes **11% of lines that were already correct** (over-correction). The gap between synthetic and real errors, together with over-correction, is the main finding and the main thing to fix next (see §7, §9).
 
 ---
 
@@ -58,7 +65,15 @@ Full fine-tuning (300M parameters fit on a T4, so LoRA isn't needed) with the Hu
 - Every 400 steps: evaluate on 300 dev lines **with real generated output** (CER/WER, not just loss) and save a checkpoint to Google Drive. The best checkpoint is kept by dev CER.
 - Training is resumable: after a runtime reset, the script continues from the latest Drive checkpoint, including optimizer, scheduler and data position.
 
-Learning curve *(Phase 4: full curve)*: training loss went 3.08 → 0.74 → 0.45 → 0.34 over steps 50–400. Dev CER at step 400 was **7.8%** (do-nothing 8.1%): the model first learns to copy, then to correct.
+**Learning curve** (dev = 300 held-out lines, CER from generated output; doing nothing = 8.1%):
+
+| step | 400 | 800 | 1,200 | 1,600 |
+|---|---|---|---|---|
+| training loss | 0.34 | 0.27 | 0.23 | 0.20 |
+| dev CER | 7.8% | 7.0% | 5.7% | **5.2%** |
+| dev WER | 31.0% | 29.7% | 26.3% | **24.6%** |
+
+The model first learns to copy (step 400 is barely below doing nothing), then to correct. **Early stop:** Colab disconnected repeatedly during training. We stopped at step 1,768 of 2,125 and use **`checkpoint-1600`**, the best by dev CER. The curve was still going down, so the last ~17% of the epoch (at a learning rate already winding down) and further epochs would likely help a bit.
 
 ## 5. Hardware constraints and optimizations
 | Constraint | Decision |
@@ -70,31 +85,130 @@ Learning curve *(Phase 4: full curve)*: training loss went 3.08 → 0.74 → 0.4
 | Colab runtimes reset or disconnect | Checkpoints and data backups on Drive, resumable training, training run as a **detached process** |
 | Rendering + OCR is CPU-bound (2 vCPUs) | Multiprocessing pool, resumable batches of 1,500 |
 
-## 6. Evaluation methodology *(Phase 4)*
-- **Metrics:** CER and WER (`jiwer`) after NFC normalization, reported *before* (raw OCR) and *after* (corrected) on three test sets: synthetic rule noise, rendered + real Tesseract, and the **5 real pages**, which is the result that matters most.
-- **Over-correction rate:** the share of already-correct lines the model changed. This measures hallucination.
+## 6. Evaluation methodology
+- **Metrics:** CER and WER (`jiwer`) after NFC normalization, reported *before* (raw Tesseract) and *after* (corrected) on three test sets that were never trained on: the **5 real page images**, which is the result that matters most; **500 rendered-and-OCR'd line images** we created; and 1,000 lines with synthetic rule noise.
+- **Over-correction rate:** the share of *already-correct* inputs the model changed. This is this task's hallucination metric.
 - **Fully-fixed rate:** the share of broken lines restored exactly. **Made-worse rate:** lines whose CER went up.
 - **Error-type breakdown:** remaining edits grouped as consonant / mark / conjunct / space-punct, before vs after.
-- **Real pages:** 95% bootstrap confidence intervals over lines, because 705 characters is a tiny sample.
-- **Decoding:** greedy vs beam search (4 beams).
-- **test_render by font**, to measure how much the Kalam font-matching helps.
+- **Real pages:** 95% bootstrap confidence intervals, resampling the 20 aligned lines, because 705 characters is a tiny sample.
+- **Decoding:** greedy vs beam search (4 beams). **By font** on the rendered set, to see how much the Kalam font-matching drives the result.
+- **Sanity checks in the notebook:** an already-correct probe line must come back unchanged, and a reloaded checkpoint must give identical outputs (checking the tied-embedding warning).
 
-*Results table: TBD.*
+### 6.1 Real page images (`Data/page_*.png`), before vs after
+Tesseract `san` (`--psm 6`) → ByT5 corrector, line by line.
 
-## 7. Failure cases *(Phase 4)*
-*TBD: qualitative before/after examples, including real-word errors and over-corrections.*
+| Page | CER OCR → corrected | WER OCR → corrected |
+|---|---|---|
+| 1 | 12.1% → **6.6%** | 34.3% → 25.7% |
+| 2 | 5.8% → 7.4% ✗ | 20.0% → 30.0% ✗ |
+| 3 | 9.8% → 10.7% ✗ | 36.8% → 36.8% |
+| 4 | 9.7% → 9.0% | 40.0% → 35.0% |
+| 5 | 9.2% → 8.5% | 38.1% → 38.1% |
+| **All (greedy)** | **9.6% → 8.2%** | **33.9% → 32.2%** |
+| All (beam 4) | 9.6% → **7.7%** | |
+
+Errors by type (all 5 pages): consonant 26 → 23 · conjunct 12 → 8 · mark 13 → **15**.
+
+**Page 1** <br><img src="Data/page_1.png" width="520">
+
+| | text |
+|---|---|
+| Ground truth | …आयुः **वेदयति** इति… संयोगः **तस्य** हिताहितं **सुखं** दुःखम् आयुः **तस्य** हितं च अहितं च… **यत्र** उक्तं तत् आयुर्वेदः |
+| Tesseract | …आगुः **ठेट्रमति** इति… संयोगः **तस्त्र** हिताहितं **युखं** दृखम् आयुः **तस्त्र** हितं च अदितं च… **मत्र** उक्तं तत् आयुर्वेद |
+| Corrected | …आगुः **वेटयति** इति… संयोगः **तस्य** ✓ हिताहितं **मुखं** दृखम् आयुः **तस्य** ✓ हितं च अदितं च… **यत्र** ✓ उक्तं तत् आयुर्वेद |
+
+**Page 2** <br><img src="Data/page_2.png" width="520">
+
+| | text |
+|---|---|
+| Ground truth | **त्रयो** दोषाः वातः पित्तं **कफः** इति एते दोषाः… **कफः** **स्थिरत्व** कारणम् |
+| Tesseract | **त्रमो** द्रोषाः वातः पित्तं **कफः** इति एते द्रोणाः… **कफः** **स्थिरत्व** कारणम् |
+| Corrected | **त्रयो** ✓ द्रोषाः वातः पित्तं **ककः** ✗ इति एते द्रोणाः… **ककः** ✗ **स्थिरत्वं** ✗ कारणम् |
+
+Pages 3–5 are listed in full in the notebook (cell 4b). Highlights: ठर्धमति→**वर्धयति** ✓, धाठने→**धावने** ✓, व्मायामः→**व्यायामः** ✓, शरीरस→**शरीरस्य** ✓, वेषम्म→वेषम्य (half-fixed), but रोग→रोगं ✗, बल→बलं ✗, द्िनचर्मा→द्वितचर्मा ✗.
+
+### 6.2 Noisy images we created (render → Tesseract → corrector)
+**500 held-out rendered lines** (6 fonts, degraded scans, real Tesseract output):
+
+| | CER | WER | fully fixed | over-correction | made worse |
+|---|---|---|---|---|---|
+| Tesseract → corrected | **8.8% → 7.4%** | 32.6% → 27.8% | 7% | 7.1% | 13.6% |
+
+| Font | n | CER OCR → corrected |
+|---|---|---|
+| Kalam (handwriting-style, like the test pages) | 241 | **15.2% → 12.2%** |
+| Tiro Devanagari Sanskrit | 55 | 3.6% → 4.0% |
+| Yatra One | 45 | 2.9% → 3.1% |
+| Lohit Devanagari | 49 | 2.1% → 2.2% |
+| Noto Serif Devanagari | 58 | 1.9% → 2.1% |
+| Noto Sans Devanagari | 52 | 1.9% → 1.9% |
+
+Errors by type: consonant 616 → 435 · conjunct 329 → 261 · mark 312 → 304 · space/punct 84 → 63.
+
+**Six new degraded images from held-out text** (`samples/`, never trained on):
+
+| Image | Tesseract | Corrected | CER |
+|---|---|---|---|
+| <img src="samples/sample_1.png" width="380"> | …अमेरिका-**दरेशस्त्र उपनितेशताटसप्र** साधनम्… | …अमेरिका-**देशस्य** ✓ **उपनितेशनाटस्य** साधनम्… | 14.1% → **4.7%** |
+| <img src="samples/sample_2.png" width="380"> | **२०१९** जनगणनानुगुणं… **३,०४९,०३८** | unchanged (digits can't be inferred from context) | 4.0% → 4.0% |
+| <img src="samples/sample_3.png" width="380"> | correct | unchanged ✓ | 0% → 0% |
+| <img src="samples/sample_4.png" width="380"> | श्रीसार्वभांमोऽपि **महानैमापि** केषु **परिगण्मते सख** | …महानैमापि केषु **परिगण्यते स्म** ✓ | 15.6% → **8.9%** |
+| <img src="samples/sample_5.png" width="380"> | …प्रप्रथमं **प्रकाङनम्** | …प्रप्रथमं **प्रकाङ्गनम्** ✗ (should be प्रकाशनम्) | 2.8% → 8.3% ✗ |
+| <img src="samples/sample_6.png" width="380"> | correct | unchanged ✓ | 0% → 0% |
+
+### 6.3 Synthetic rule noise (1,000 held-out lines)
+| | CER | WER | fully fixed | over-correction | made worse |
+|---|---|---|---|---|---|
+| noisy → corrected | **7.4% → 3.4%** | 36.0% → 18.5% | 30% | 13.7% | 6.8% |
+
+Errors by type: consonant 1,495 → 540 (−64%) · conjunct 645 → 270 (−58%) · space/punct 128 → 69 · mark 351 → 313 (−11%).
+
+### 6.4 What the numbers say
+1. **The synthetic-to-real gap is the main bottleneck.** −54% CER on rule noise, but −16% on rendered images and −15% (greedy) / −20% (beam) on the real pages. The model learned *our* noise model well, and real Tesseract errors are only partly covered by it.
+2. **It helps where OCR is bad and hurts slightly where OCR is already good.** Kalam goes 15.2% → 12.2%. Clean print fonts (about 2% CER) get very slightly worse. *Product implication:* only run the corrector on low-confidence OCR output.
+3. **Consonant and conjunct errors get fixed; marks barely do** (−11% synthetic, worse on real pages). Anusvara vs ए-matra and visarga drops often give two valid forms, so they're truly ambiguous without wider context.
+4. **Beam search helps on real pages** (8.2% → 7.7%), not on rendered lines. That's cheap to turn on for short pages.
+5. **Real pages: the confidence intervals overlap** ([7.4–12.5] vs [6.4–10.9]). On 705 characters we can't claim a statistically solid improvement. A larger real test set is the first priority.
+
+## 7. Failure cases (hallucination and error analysis)
+**Over-correction: 43 of 388 already-correct lines (11%) were changed.** Almost all of them apply one of our *training* confusion pairs in reverse to rare words or proper nouns:
+
+| Correct input | Model output | Pattern |
+|---|---|---|
+| आत्म**घा**तिरोगेण | आत्म**धा**तिरोगेण | घ→ध (confusion table is two-way) |
+| …व्यतिरिक्ता**घ**नाशिनी | …व्यतिरिक्ता**ध**नाशिनी | घ→ध |
+| नमदा**फा**-नदी | नमदा**का**-नदी | फ→क on a proper noun |
+| विरच**य्य** | विरच**स्य** | rare form → common genitive ending |
+| …खनीली**मा** | …खनीली**या** | म→य |
+| कफः (real page 2, ×2) | **ककः** | फ→क on an Ayurvedic term rare in Wikipedia |
+
+*Root cause:* the confusion table contains both directions (घ↔ध, क↔फ, य↔म), so for a rare word the model can't tell which side is the "real" one and falls back on what's more common in Wikipedia. Fixes: one-way confusions learned from real OCR, a domain lexicon, and confidence-gated edits (§9).
+
+**Real-word errors: 0 of 3 fixed** on the real pages: योगः (should be रोगः), द्रोण (should be दोष), निहार (should be विहारः). All are valid words, and fixing them needs domain context (रोगः नाम दोष वैषम्य, "disease is imbalance of the doshas") that a model trained on Wikipedia doesn't have.
+
+**Made worse: 13.6% of rendered lines.** Typical cases:
+- partial fixes that introduce a new error (द्रढतया → द्रद्धतया)
+- quote and bracket normalization
+- anusvara added to correct words (रोग→रोगं, बल→बलं, स्थिरत्व→स्थिरत्वं). Our noise drops anusvara often, so the model learned to add it back too eagerly.
+
+**Not fixable from the text alone:** digits (२०११→२०१९), heavily garbled words where Tesseract output is far from any real word (उपनितेशताटसप्र), and sandhi-merged long compounds.
+
+**Biggest wins** (whole line restored exactly): य्रत् अस्भाफं ढेहस्य → **यत् अस्माकं देहस्य** · अम्मन ठर्षे इठलीदेशसथः → **अस्मिन् वर्षे इटलीदेशस्थः** · इति पयतिपाद्रयन्तः मन्नि → **इति प्रतिपादयन्तः सन्ति**.
 
 ## 8. Challenges encountered
 - **Changed library APIs:** Colab ships `transformers` 5.x, where `warmup_ratio` was folded into `warmup_steps` (a float means a ratio) and `group_by_length` became `train_sampling_strategy`. We inspected the signatures instead of guessing and fixed both together.
 - **Running out of GPU memory** on the first step. Length grouping deliberately puts the longest batch first, so we fixed it at the worst case with gradient accumulation.
 - **Tesseract was too good on clean fonts:** naive rendering gave about 2% CER, which teaches little. We measured per font and weighted toward the font that produces realistic errors, and we report that as a possible source of optimistic results.
 - **Notebook and runtime instability:** the first background launch (`!nohup … &`) stayed attached to the cell and blocked the notebook. After a browser reconnect, training stalled at step 400. Because checkpoints and data were on Drive, we resumed from `checkpoint-400` with no loss, using a properly detached `subprocess.Popen(start_new_session=True)`.
+- **Repeated Colab disconnects:** the runtime kept dropping during the roughly 80-minute run. The detached process kept going through browser disconnects. In the end we stopped early at step 1,768 and kept the best saved checkpoint (1,600) rather than risk losing time to another reset.
+- **A bug in our own evaluation:** the first real-word-error check matched substrings and wrongly reported योगः as unfixed inside the correct word संयोगः. We switched to whole-word comparison.
 - **The tokenizer hypothesis was wrong:** we expected mT5 to fragment Sanskrit badly, and measured that it doesn't. We kept ByT5 for other, stated reasons and documented the finding.
 
 ## 9. What we would improve with more time
 1. **More realistic data:** classical corpora (GRETIL, DCS, Bhagavad Gita, Ayurvedic texts) instead of Wikipedia, real scanned pages with aligned text, and more fonts and degradations (bleed-through, broken glyphs).
 2. **Correlated noise:** errors that cluster per word and per line, and confusion tables learned from OCR runs instead of written by hand.
 3. **Ablations:** mT5-small vs ByT5-small (speed and quality), LoRA vs full fine-tuning, 1 vs 3 epochs, and with vs without render pairs.
-4. **Confidence-gated correction:** apply an edit only when the model's confidence is high, using token log-probabilities or agreement between beams, to push over-correction toward zero.
-5. **Page-level context:** correct with neighbouring lines as context to resolve more real-word errors. Add IAST/Roman transliteration noise.
-6. **Deployment:** int8 quantization or ONNX for CPU inference, plus a simple OCR → correct → diff-view web demo for human review.
+4. **Fix the two failure modes we measured:** use one-way confusions and a lower anusvara-drop rate in the noise model (these drive most over-corrections), and add a domain lexicon (Ayurveda terms such as कफ) to the training text. Also complete the epoch and train 2–3 epochs; the dev curve was still falling.
+5. **Confidence-gated correction:** apply an edit only when the model's confidence is high, using token log-probabilities or agreement between beams, to push over-correction toward zero.
+6. **Page-level context:** correct with neighbouring lines as context to resolve more real-word errors. Add IAST/Roman transliteration noise.
+7. **Deployment:** int8 quantization or ONNX for CPU inference, plus a simple OCR → correct → diff-view web demo for human review.
