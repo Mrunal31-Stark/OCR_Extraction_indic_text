@@ -1,6 +1,6 @@
 """Synthetic OCR noise for Devanagari, calibrated on real Tesseract errors (see notebook Phase 1).
 
-Error mix in real OCR on our test pages: ~60% look-alike consonant swaps, ~25% mark (matra/anusvara/visarga)
+Error mix in real OCR on my test pages: ~60% look-alike consonant swaps, ~25% mark (matra/anusvara/visarga)
 errors, ~10% conjunct insert/drop, ~5% spacing/punctuation. `corrupt()` reproduces that mix.
 """
 import random
@@ -53,7 +53,7 @@ def corrupt(text, rate, rng=random):
 
 def sample_rate(rng=random):
     """Per-line noise level: 10% clean lines (teach 'leave correct text alone'), rest spread around real OCR's ~10% CER.
-    Measured: effective CER ~= rate/2, so rate in [0.03, 0.45] -> CER ~1.5%-20% (real Tesseract on our pages: 9.6%)."""
+    Measured: effective CER ~= rate/2, so rate in [0.03, 0.45] -> CER ~1.5%-20% (real Tesseract on my pages: 9.6%)."""
     return 0.0 if rng.random() < 0.10 else rng.uniform(0.03, 0.45)
 
 

@@ -26,7 +26,7 @@ Numbers come from [`results/metrics.json`](results/metrics.json); the full analy
 | Test set | CER before → after (95% CI) | WER before → after | Over-correction |
 |---|---|---|---|
 | **Given real page images** (5 pages) | 9.6% [7.4–12.5] → **8.2%** [6.4–10.9]; beam 4: **7.7%** | 33.9% → 32.2% | – |
-| **Our noisy rendered images** (500 lines) | 8.8% [8.0–9.7] → **7.4%** [6.7–8.2] | 32.6% → 27.8% | 11 / 155 (7.1%) |
+| **My noisy rendered images** (500 lines) | 8.8% [8.0–9.7] → **7.4%** [6.7–8.2] | 32.6% → 27.8% | 11 / 155 (7.1%) |
 | Synthetic rule noise (1,000 lines) | 7.4% [7.0–7.8] → **3.4%** [3.2–3.7] | 36.0% → 18.5% | 32 / 233 (13.7%) |
 
 Statistically clear gains on both generated test sets (non-overlapping CIs). On the 5 real pages the gain is modest and the CIs overlap. 11% of already-correct lines get changed (over-correction). See the report for the failure analysis.
@@ -46,7 +46,7 @@ Statistically clear gains on both generated test sets (non-overlapping CIs). On 
 | `results/predictions_*.jsonl` | Model output for **every test line** with per-line CER and flags (`over_corrected`, `made_worse`, `fully_fixed`) |
 | `results/predictions_real_pages.json` | Real pages: ground truth / Tesseract / corrected, per page and per line |
 | `results/trainer_state_checkpoint-1600.json`, `results/train_resumed_from_400.log` | Training log: loss and dev CER/WER per evaluation step |
-| `samples/` | 6 **noisy images we created** from held-out text + their OCR and corrected outputs (`samples.json`) |
+| `samples/` | 6 **noisy images I created** from held-out text + their OCR and corrected outputs (`samples.json`) |
 | `REPORT.md` | Report: the 9 required points, results, failure analysis, limitations |
 
 Each JSONL line in `datasets/` is `{"clean": …, "noisy": …, "src": "rule" | "render", "font": … (render only)}`.
@@ -144,7 +144,7 @@ from infer import Corrector
 # Windows only, if tesseract isn't on PATH:
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-ocr = pytesseract.image_to_string(Image.open('Data/page_1.png'), lang='san', config='--psm 6')   # same config as our baseline
+ocr = pytesseract.image_to_string(Image.open('Data/page_1.png'), lang='san', config='--psm 6')   # same config as my baseline
 fixed = Corrector('MrunalYewatkar45/byt5-small-sanskrit-post-ocr').correct(ocr.splitlines(), num_beams=4)
 print('\n'.join(fixed))
 ```
@@ -168,7 +168,7 @@ Tip: the corrector helps most on low-quality OCR. On clean, already-accurate OCR
    - Re-run the **monitor** cell any time to see the step, loss and dev CER (evaluated every 400 steps, checkpoints saved to `MyDrive/sanskrit_ocr/byt5/`).
    - **If Colab disconnects:** reconnect and re-run the resume cell. It restores the data from Drive and continues from the last saved checkpoint, losing at most 400 steps.
    - Keep the browser tab open; Colab may stop idle or long-running sessions.
-   - **Do not run the "3d. Early stop" cell** unless you want to stop training. It kills the training process. We used it because of repeated disconnects; if training finishes normally, the final model is saved to `MyDrive/sanskrit_ocr/byt5/final`.
+   - **Do not run the "3d. Early stop" cell** unless you want to stop training. It kills the training process. I used it because of repeated disconnects; if training finishes normally, the final model is saved to `MyDrive/sanskrit_ocr/byt5/final`.
 7. **Run Phase 4 (evaluation, ~10 min):** loads the best checkpoint from Drive and evaluates the real pages, the rendered-image test set (by font) and the rule-noise test set. It also renders the 6 sample images and runs the failure analysis. The last cell packages all results and downloads them as a zip.
 
 **Colab troubleshooting**
