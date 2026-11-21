@@ -67,7 +67,52 @@ def full_report(clean, noisy, pred):
     }
 
 
-if __name__ == '__main__':
+def flat(s):
+    return ' '.join(s.split())
+
+
+def main(argv):
+    """CLI: evaluate a model on a jsonl test set and/or the real pages (uses the Tesseract output saved in phase1.json)."""
+    import argparse
+    import json
+    from infer import Corrector
+    ap = argparse.ArgumentParser(description='Evaluate a post-OCR corrector.')
+    ap.add_argument('--model', required=True, help='HF repo id or local checkpoint dir')
+    ap.add_argument('--data', nargs='*', default=[], help='jsonl files with {"clean", "noisy"} per line')
+    ap.add_argument('--real-pages', help='datasets/phase1.json (ground truth + saved Tesseract output)')
+    ap.add_argument('--limit', type=int, help='evaluate only the first N lines of each jsonl (quick check on CPU)')
+    ap.add_argument('--beams', type=int, default=1)
+    ap.add_argument('--out', help='write all metrics to this json file')
+    a = ap.parse_args(argv)
+    corr, out = Corrector(a.model), {}
+    for path in a.data:
+        rows = [json.loads(l) for l in open(path, encoding='utf-8')][:a.limit]
+        clean, noisy = [r['clean'] for r in rows], [r['noisy'] for r in rows]
+        pred = corr.correct(noisy, num_beams=a.beams)
+        rep = full_report(clean, noisy, pred)
+        rep['cer_before_ci95'], rep['cer_after_ci95'] = bootstrap_cer(clean, noisy, n=300), bootstrap_cer(clean, pred, n=300)
+        out[path] = rep
+        print(f"{path}: n={len(rows)} CER {rep['cer_before']:.4f} -> {rep['cer_after']:.4f} | WER {rep['wer_before']:.4f} -> "
+              f"{rep['wer_after']:.4f} | fully fixed {rep['fully_fixed']:.1%} | over-correction {rep['over_correction']:.1%} | "
+              f"made worse {rep['made_worse']:.1%}\n  error types {rep['types_before']} -> {rep['types_after']}")
+    if a.real_pages:
+        p1 = json.load(open(a.real_pages, encoding='utf-8'))
+        gt, ocr = p1['gt'], p1['ocr'][p1['best_config']]
+        G, O, F = [], [], []
+        for k in sorted(gt, key=int):
+            fixed = corr.correct(ocr[k].splitlines(), num_beams=a.beams)
+            G.append(flat(gt[k])); O.append(flat(ocr[k])); F.append(flat(' '.join(fixed)))
+            print(f"page {k}: CER {jiwer.cer(G[-1], O[-1]):.4f} -> {jiwer.cer(G[-1], F[-1]):.4f}\n  FIXED: {F[-1]}")
+        rep = full_report(G, O, F)
+        out['real_pages'] = rep
+        print(f"real pages: CER {rep['cer_before']:.4f} -> {rep['cer_after']:.4f} | WER {rep['wer_before']:.4f} -> {rep['wer_after']:.4f}")
+    if a.out:
+        json.dump(out, open(a.out, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+
+
+if __name__ == '__main__' and len(__import__('sys').argv) > 1:
+    main(__import__('sys').argv[1:])
+elif __name__ == '__main__':
     assert category('य', 'म') == 'consonant' and category('ं', 'े') == 'mark'
     assert category('', '्र') == 'conjunct' and category(' ', '') == 'space/punct'
     clean = ['रोगः नाम दोष', 'आयुः वर्धनम्']

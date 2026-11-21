@@ -1,0 +1,12 @@
+# Inference + evaluation
+torch>=2.1
+transformers>=5.0        # train.py uses the 5.x TrainingArguments names (warmup_steps float, train_sampling_strategy)
+huggingface_hub
+jiwer
+numpy
+# Training
+datasets
+accelerate
+# OCR on new images (also needs the Tesseract binary + Sanskrit data, see README)
+pytesseract
+pillow
