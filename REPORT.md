@@ -23,6 +23,17 @@ All numbers, per-line predictions and data splits are in the repo: `results/metr
 
 ---
 
+## Why I chose Option 3 (post-OCR correction)
+| | Option 1: Sanskrit–English LLM | Option 2: retrieval embeddings | **Option 3: post-OCR correction** |
+|---|---|---|---|
+| **Can it be measured objectively?** | Hard: translations and explanations need human judgment, and BLEU is unreliable for Sanskrit | Needs relevance labels for queries | **Yes: exact ground truth, so CER/WER are unambiguous** |
+| **Real test data available?** | No | No | **Yes: the 5 page scans + ground truth in `Data/`** |
+| **Where does training data come from?** | Instruction pairs I'd have to write or generate with a large LLM | Aligned Sanskrit–English corpora (small) | **Any clean Sanskrit text: corrupt it and train to undo it, with no labelling** |
+| **Fits a T4 in a day?** | A 1–3B LLM needs QLoRA, and generation-based evaluation is slow | Yes | **Yes: a 300M seq2seq model can be fully fine-tuned** |
+| **Clear baseline to beat?** | Weak | Off-the-shelf embeddings | **"Do nothing" = raw OCR, so any gain is visible** |
+
+I chose Option 3 because it was the one track where I could **measure progress honestly on real data** within the 1–2 day, T4-only budget. It also exercises most of what the brief lists as interesting: data generation strategy, noise modelling, Unicode normalization, script-specific challenges (conjuncts, matras) and tokenizer behaviour. It has clear practical value too: a corrector sits after *any* OCR engine in a manuscript-digitization pipeline. The risk I accepted was that synthetic noise might not match real OCR errors. I reduced it by building the noise model *from* the real OCR errors (Phase 1) and by keeping the real pages strictly for testing. That gap does turn out to be the main finding (§6.4). A longer walkthrough of every decision is in [`PROJECT_EXPLAINED.md`](PROJECT_EXPLAINED.md).
+
 ## 1. Problem understanding
 OCR engines struggle with Sanskrit in Devanagari script. Glyphs look alike (य/म, व/ठ), vowel signs and the marks above and below a letter are easy to miss, conjuncts (stacked half-letters) break apart, and old print adds noise. The goal is a model that takes **raw OCR text** and returns **corrected text**.
 

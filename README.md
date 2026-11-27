@@ -9,6 +9,7 @@ This is Option 3 of the AI/ML Model Training assignment. The full write-up is in
 | **Trained model (Hugging Face, public)** | https://huggingface.co/MrunalYewatkar45/byt5-small-sanskrit-post-ocr |
 | **Code, data, results (this repo)** | https://github.com/Mrunal31-Stark/OCR_Extraction_indic_text |
 | **Report** | [`REPORT.md`](REPORT.md) |
+| **Project explained (why Option 3, every decision, interview Q&A)** | [`PROJECT_EXPLAINED.md`](PROJECT_EXPLAINED.md) |
 | **Notebook** | [`notebooks/Sanskrit_Post_OCR_Correction.ipynb`](notebooks/Sanskrit_Post_OCR_Correction.ipynb) |
 
 ```
